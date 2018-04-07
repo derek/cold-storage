@@ -1,0 +1,1898 @@
+import java.awt.*;
+import java.awt.event.*;
+import java.applet.*;
+import java.lang.*;
+import java.lang.Object.*;
+  
+
+public class MLS extends Applet implements ActionListener, ItemListener
+{
+	boolean isStandalone = true;
+	
+	public Team[] team = new Team[12];
+	
+	public TextArea 	standings, list, games;
+//	public Checkbox[] 	type = new Checkbox[3];
+	public Choice			type = new Choice();
+	public Button 		run;
+	public int temp;
+	public int week;
+	public Double dotemp;
+	public String stemp;
+	public char realResults = 'y';
+	public char fixed = 'y';
+	public int rows = 13;
+	public int cols = 8;
+
+	public Label[]	playoffs	= new Label[15];
+	public Button[] 	plus		= new Button[24];
+	public Button[] 	minus		= new Button[24];
+	public Label[] 	tSkill 		= new Label[12];
+	public Label[] 	tHFA 		= new Label[12];
+	
+	public Label[]  division = new Label[3];
+	
+	public Label[]  teamName 	= new Label[12];
+	public Label[]  teamName2 	= new Label[12];
+	public Label[]  tgamesPlayed= new Label[12];
+	public Label[]  twins   	= new Label[12];
+	public Label[]  tties   	= new Label[12];
+	public Label[]  tlosses 	= new Label[12];
+	public Label[]  tpoints 	= new Label[12];
+	
+	public Label[][] stats		= new Label[cols][rows];
+	public Label[][] rankings = new Label[9][13];
+	
+	public String[] stype = {"Current stats",
+							 "Stats up to Week 1",
+							 "Stats up to Week 2",
+							 "Stats up to Week 3",
+							 "Stats up to Week 4",
+							 "Stats up to Week 5",
+							 "Stats up to Week 6",
+							 "Full season",
+							 "Full season including stats from seasons games played",							 
+							 };
+
+	
+	public static void main(String[] args) 
+	{
+		MLS applet = new MLS();
+	}
+	
+	public MLS()
+	{
+		
+		char result;
+		//                  NAME  SKILL|HFA|DIV| #
+		team[0]  = new Team("LA", 	6, 	 3,	 1,  0);
+		team[1]  = new Team("KC", 	7, 	 2,	 1,  1);
+		team[2]  = new Team("SJ", 	5, 	 3,  1,  2);
+		team[3]  = new Team("CO", 	3, 	 3,  1,  3);
+
+		team[4]  = new Team("CH", 	7, 	 3,  0,  4);
+		team[5]  = new Team("DA", 	4, 	 3,  0,  5);
+		team[6]  = new Team("TB", 	6, 	 2,  0,  6);
+		team[7]  = new Team("CB", 	4, 	 3,  0,  7);
+
+		team[8]  = new Team("DC", 	6, 	 3,  2,  8);
+		team[9]  = new Team("NY", 	8, 	 2,  2,  9);
+		team[10] = new Team("MI", 	7, 	 2,  2, 10);
+		team[11] = new Team("NE", 	2, 	 2,  2, 11);
+		
+		createGUI();
+	
+		for (int i = 0; i < 24; i++)
+		{	
+			minus[i].addActionListener(this);
+			plus[i].addActionListener(this);
+		}
+		
+		run.addActionListener(this);
+		type.addItemListener(this);
+		placeValues(0);
+	}
+
+	public void program()
+	{	
+		for (int i = 0; i < 12; i++)
+			team[i].reset();
+	
+		if (week == -1) 
+		{	
+			for (int i = 0; i < 12; i++)
+				for (int j = 0; j < 12; j++)		
+					getResult(i, j, 0);
+
+			for (int i = 0; i < 12; i++)
+				for (int j = 0; j < 12; j++)		
+					getResult(i, j, 1);
+
+			clearGames();
+
+		}
+
+		if (week == -2) 
+		{	
+			for (int i = 0; i < 12; i++)
+				for (int j = 0; j < 12; j++)		
+					getResult(i, j, 0);
+
+			for (int i = 0; i < 12; i++)
+				for (int j = 0; j < 12; j++)		
+					getResult(i, j, 1);
+
+			clearGames();
+			playedGames();
+		}
+
+		else if (week > 0) 
+		{	
+			playedGames();
+		}
+
+		for (int i = 0; i < 12; i++)
+			team[i].calculatePoints();
+
+		rankTeams();
+		placeValues(1);
+		
+		for (int i = 0; i < 12; i++)
+		{
+			team[i].calculateWinPercentage();
+			team[i].calculateGamePoints();
+		}
+		
+		for (int i = 0; i < 12; i++)
+		{
+			for (int j = 0; j < 12; j++)
+			{
+				if (team[i].getHomeGame(j) 	 	!= 'x')
+				{	
+					team[i].addOPoints(team[j].getPoints());
+					team[i].addOGames(team[j].getGames());
+					team[i].addOWinPercentage(team[j].getWinPercentage());
+				}
+				if (team[i].getAwayGame(j) 	 	!= 'x')
+				{	
+					team[i].addOPoints(team[j].getPoints());
+					team[i].addOGames(team[j].getGames());
+					team[i].addOWinPercentage(team[j].getWinPercentage());
+				}
+				if (team[i].getHomeDivGame(j)  	!= 'x')
+				{	
+					team[i].addOPoints(team[j].getPoints());
+					team[i].addOGames(team[j].getGames());
+					team[i].addOWinPercentage(team[j].getWinPercentage());
+				}
+				if (team[i].getAwayDivGame(j)  	!= 'x')
+				{	
+					team[i].addOPoints(team[j].getPoints());
+					team[i].addOGames(team[j].getGames());
+					team[i].addOWinPercentage(team[j].getWinPercentage());
+				}
+			}
+		}
+
+		for (int i = 0; i < 12; i++)
+		{
+			team[i].calculateOWinPercentage();
+			team[i].calculateRating();
+			team[i].calculateLGPRating();
+		}
+		
+		ssrankTeams();
+		rirankTeams();		
+		gprankTeams();
+		ffrankTeams();
+		outputStats();
+	}	
+	
+	
+	void outputStats()	
+	{	
+		for (int i = 1; i < cols; i++)
+			for (int j = 1; j < rows; j++)
+			{
+				stats[1][j].setText(i2s(team[j-1].getRank()+1));
+				stats[2][j].setText(d2s(team[j-1].getWinPercentage()));
+				stats[3][j].setText(i2s(team[j-1].getSSRank()+1));
+				stats[4][j].setText(d2s(team[j-1].getOWinPercentageAvg()));
+				stats[5][j].setText(d2s(team[j-1].getRating()));
+				stats[6][j].setText(d2s(team[j-1].getLGPRating()));
+				stats[7][j].setText(d2s(team[j-1].getFFactor()));
+			}
+			
+		for (int i = 0; i < 12; i++)
+			for (int j = 0; j < 12; j++)
+				if (team[i].getRank() == j)
+				{	
+					rankings[1][j+1].setText(team[i].getName());
+					rankings[0][j+1].setText((j+1) + ". ");
+					rankings[2][j+1].setText("- " + team[i].getPoints());
+				}
+
+		for (int i = 0; i < 12; i++)
+			for (int j = 0; j < 12; j++)
+				if (team[i].getGPRank() == j)
+				{	
+					rankings[3][j+1].setText(team[i].getName());
+					rankings[4][j+1].setText("- " + team[i].getLGPRating());
+				}
+
+		for (int i = 0; i < 12; i++)
+			for (int j = 0; j < 12; j++)
+				if (team[i].getRIRank() == j)
+				{	
+					rankings[5][j+1].setText(team[i].getName());
+					rankings[6][j+1].setText("- " + team[i].getRating());
+				}
+
+		for (int i = 0; i < 12; i++)
+			for (int j = 0; j < 12; j++)
+				if (team[i].getFFRank() == j)
+				{	
+					rankings[7][j+1].setText(team[i].getName());
+					rankings[8][j+1].setText("- " + team[i].getFFactor());
+				}
+	}
+
+	char getResult(int a, int h, int gameType)
+	{
+		char result;
+
+		int	homeTeamTotal = team[h].getSkill() + team[h].getHFA();
+		
+		int	awayTeamTotal = team[a].getSkill();
+		int	tieRatio = 6;
+		int	total = homeTeamTotal + awayTeamTotal + ((homeTeamTotal + awayTeamTotal)/tieRatio);
+		double random = Math.round(Math.random()*total+1);
+		
+		if (random <= homeTeamTotal) 
+			result = 'W';
+		else if ((random > homeTeamTotal) && (random <= awayTeamTotal + homeTeamTotal))
+			result = 'L';
+		else 
+			result = 'T';
+
+		if (gameType == 0)
+		{
+			team[h].setHomeGame(a, result);
+			team[a].setAwayGame(h, opposite(result));
+		}	
+			
+		else if (gameType == 1)
+		{
+			team[h].setHomeDivGame(a, result);
+			team[a].setAwayDivGame(h, opposite(result));
+		}	
+			
+		else if (gameType == 2)
+		{
+			total = homeTeamTotal + awayTeamTotal;
+			
+			if (random <= homeTeamTotal) 
+				return 'W';
+			else if (random > homeTeamTotal)
+				return 'L';
+			else 
+				return 'T';
+		}
+		return 'x';
+	}	
+	
+	void clearGames()
+	{
+		for (int i = 0; i < 12; i++)
+		{
+			for (int j = 0; j < 12; j++)
+				if (i == j)
+				{
+					team[i].setHomeGame(j, 'x');
+					team[i].setHomeDivGame(j, 'x');				
+					team[i].setAwayGame(j, 'x');
+					team[i].setAwayDivGame(j, 'x');				
+				}
+			
+			if ((i > -1) && (i < 4))
+				for (int j = 4; j < 12; j++)
+				{
+					team[i].setHomeDivGame(j, 'x');
+					team[i].setAwayDivGame(j, 'x');
+				}
+				
+			if ((i > 3)  && (i < 8))
+			{
+				for (int j = 0; j < 4; j++)
+				{	
+					team[i].setHomeDivGame(j, 'x');
+					team[i].setAwayDivGame(j, 'x');
+				}
+				for (int j = 8; j < 12; j++)
+				{	
+					team[i].setHomeDivGame(j, 'x');
+					team[i].setAwayDivGame(j, 'x');
+				}
+			}
+			
+			if ((i > 7)  && (i < 12))
+				for (int j = 0; j < 8; j++)
+				{	
+					team[i].setHomeDivGame(j, 'x');
+					team[i].setAwayDivGame(j, 'x');
+				}
+		}
+	}
+	
+	void rankTeams()
+	{
+		for (int i = 11; i > -1; i--)
+			for (int j = 11; j > -1; j--)
+				if (team[i].getPoints() > team[j].getPoints())
+					team[i].setRank(team[i].getRank()-1);
+
+		for (int i = 11; i > -1; i--)
+			for (int j = 11; j > -1; j--)
+				if ((team[i].getRank() == team[j].getRank()) && (i != j))
+				{
+					if (team[i].getHomeGame(j) == 'W' && team[i].getAwayGame(j) == 'W')			// Team i wins both games
+						team[i].setRank(team[i].getRank()-1);
+				
+					else if (team[i].getHomeGame(j) == 'W' && team[i].getAwayGame(j) == 'T')	// Team i wins 1 and ties 1
+						team[i].setRank(team[i].getRank()-1);
+					else if (team[i].getHomeGame(j) == 'W' && team[i].getAwayGame(j) == 'x')	// Team i wins the only game
+						team[i].setRank(team[i].getRank()-1);
+				
+					else if (team[i].getSkill() > team[j].getSkill())
+						team[i].setRank(team[i].getRank()-1);
+					
+					else if (team[i].getSkill() < team[j].getSkill())
+						team[j].setRank(team[j].getRank()-1);
+
+					else if (team[i].getSkill() == team[j].getSkill())
+					{
+						double random = Math.round(Math.random()*1);
+						if (random == 0)
+							team[j].setRank(team[j].getRank()-1);
+						else
+							team[i].setRank(team[i].getRank()-1);
+					}
+					
+					else if (team[i].getHomeGame(j) == 'x')
+					{
+						double random = Math.round(Math.random()*1);
+						if (random == 0)
+							team[j].setRank(team[j].getRank()-1);
+						else
+							team[i].setRank(team[i].getRank()-1);
+					}
+				}
+	}
+	
+	void ssrankTeams()
+	{	
+		for (int i = 11; i > -1; i--)
+			for (int j = 11; j > -1; j--)
+				if (team[i].getOWinPercentageAvg() > team[j].getOWinPercentageAvg())
+					team[i].setSSRank(team[i].getSSRank()-1);
+
+		for (int i = 11; i > -1; i--)
+			for (int j = 11; j > -1; j--)
+				if ((team[i].getRank() == team[j].getRank()) && (i != j))
+					if (team[i].getRank() > team[j].getRank())
+					{
+						team[i].setSSRank(team[i].getSSRank()-1);
+					}
+						
+					else
+					{
+						double random = Math.round(Math.random()*1);
+						if (random == 0)
+							team[j].setRank(team[j].getRank()-1);
+						else
+							team[i].setRank(team[i].getRank()-1);
+					}
+	}
+	
+	void rirankTeams()
+	{	
+		for (int i = 11; i > -1; i--)
+			for (int j = 11; j > -1; j--)
+				if (team[i].getRating() > team[j].getRating())
+					team[i].setRIRank(team[i].getRIRank()-1);
+	}
+	
+	void gprankTeams()
+	{	
+		for (int i = 11; i > -1; i--)
+			for (int j = 11; j > -1; j--)
+				if (team[i].getLGPRating() < team[j].getLGPRating())
+					team[i].setGPRank(team[i].getGPRank()-1);
+	}
+	
+	void ffrankTeams()
+	{	
+		for (int i = 11; i > -1; i--)
+			for (int j = 11; j > -1; j--)
+				if (team[i].getFFactor() > team[j].getFFactor())
+					team[i].setFFRank(team[i].getFFRank()-1);
+	}
+	
+	public void playoffs()
+	{
+		char ctemp;
+		
+		for (int i = 0; i < 12; i++)
+		{
+			team[i].setPlayoffSkill();
+			
+			if (team[i].getRank() == 0)
+				playoffs[0].setText(team[i].getFullName());
+			if (team[i].getRank() == 7)
+				playoffs[1].setText(team[i].getFullName());
+
+			if (team[i].getRank() == 4)
+				playoffs[2].setText(team[i].getFullName());
+			if (team[i].getRank() == 3)
+				playoffs[3].setText(team[i].getFullName());
+
+			if (team[i].getRank() == 1)
+				playoffs[4].setText(team[i].getFullName());
+			if (team[i].getRank() == 6)
+				playoffs[5].setText(team[i].getFullName());
+
+			if (team[i].getRank() == 5)
+				playoffs[6].setText(team[i].getFullName());
+			if (team[i].getRank() == 2)
+				playoffs[7].setText(team[i].getFullName());
+		}
+
+		ctemp = series(getTeamID(playoffs[0].getText()), getTeamID(playoffs[1].getText()));
+		if 		(ctemp == 'W')	playoffs[8].setText(playoffs[0].getText());
+		else if (ctemp == 'L')	playoffs[8].setText(playoffs[1].getText());
+		else 					playoffs[8].setText("error");
+		
+		ctemp = series(getTeamID(playoffs[3].getText()), getTeamID(playoffs[2].getText()));
+		if 		(ctemp == 'W')	playoffs[9].setText(playoffs[3].getText());
+		else if (ctemp == 'L')	playoffs[9].setText(playoffs[2].getText());
+		else 					playoffs[9].setText("error");
+		
+		ctemp = series(getTeamID(playoffs[4].getText()), getTeamID(playoffs[5].getText()));
+		if 		(ctemp == 'W')	playoffs[10].setText(playoffs[4].getText());
+		else if (ctemp == 'L')	playoffs[10].setText(playoffs[5].getText());
+		else 					playoffs[10].setText("error");
+		
+		ctemp = series(getTeamID(playoffs[7].getText()), getTeamID(playoffs[6].getText()));
+		if 		(ctemp == 'W')	playoffs[11].setText(playoffs[7].getText());
+		else if (ctemp == 'L')	playoffs[11].setText(playoffs[6].getText());
+		else 					playoffs[11].setText("error");
+		
+		if (team[getTeamID(playoffs[8].getText())].getRank() > team[getTeamID(playoffs[9].getText())].getRank())
+		{
+			ctemp = series(getTeamID(playoffs[8].getText()), getTeamID(playoffs[9].getText()));
+	
+			if 		(ctemp == 'W')	playoffs[12].setText(playoffs[8].getText());
+			else if (ctemp == 'L')	playoffs[12].setText(playoffs[9].getText());
+			else 					playoffs[12].setText("error");
+		}
+	
+		
+		else 
+		{
+			ctemp = series(getTeamID(playoffs[9].getText()), getTeamID(playoffs[8].getText()));
+	
+			if 		(ctemp == 'W')	playoffs[12].setText(playoffs[9].getText());
+			else if (ctemp == 'L')	playoffs[12].setText(playoffs[8].getText());
+			else 					playoffs[12].setText("error");
+		}
+
+		
+		if (team[getTeamID(playoffs[10].getText())].getRank() > team[getTeamID(playoffs[11].getText())].getRank())
+		{
+			ctemp = series(getTeamID(playoffs[10].getText()), getTeamID(playoffs[11].getText()));
+	
+			if 		(ctemp == 'W')	playoffs[13].setText(playoffs[10].getText());
+			else if (ctemp == 'L')	playoffs[13].setText(playoffs[11].getText());
+			else 					playoffs[13].setText("error");
+		}
+	
+		else 
+		{
+			ctemp = series(getTeamID(playoffs[11].getText()), getTeamID(playoffs[10].getText()));
+	
+			if 		(ctemp == 'W')	playoffs[13].setText(playoffs[11].getText());
+			else if (ctemp == 'L')	playoffs[13].setText(playoffs[10].getText());
+			else 					playoffs[13].setText("error");
+		}
+		
+		team[getTeamID(playoffs[12].getText())].setHFA(0);
+		team[getTeamID(playoffs[13].getText())].setHFA(0);
+		
+		ctemp = getResult(getTeamID(playoffs[13].getText()), getTeamID(playoffs[12].getText()), 2);
+		
+		if (ctemp == 'W')
+			playoffs[14].setText(playoffs[12].getText());
+		else if (ctemp == 'L')
+			playoffs[14].setText(playoffs[13].getText());
+		else if (ctemp == 'T')
+			playoffs[14].setText("tie");
+		else
+			playoffs[14].setText("error");
+	}
+	
+	int getTeamID(String name)
+	{
+		if (name.equals("Los Angeles") 	|| name.equals("LA"))	return 0;
+		if (name.equals("Kansas City") 	|| name.equals("KC"))	return 1;
+		if (name.equals("San Jose") 	|| name.equals("SJ"))	return 2;
+		if (name.equals("Colorado") 	|| name.equals("CO"))	return 3;
+		if (name.equals("Chicago") 		|| name.equals("CH"))	return 4;;
+		if (name.equals("Dallas") 		|| name.equals("DA"))	return 5;
+		if (name.equals("Tampa Bay") 	|| name.equals("TB"))	return 6;
+		if (name.equals("Columbus") 	|| name.equals("CB"))	return 7;
+		if (name.equals("Washinton DC") || name.equals("DC"))	return 8;
+		if (name.equals("New York") 	|| name.equals("NY"))	return 9;
+		if (name.equals("Miami") 		|| name.equals("MI"))	return 10;
+		if (name.equals("New England") 	|| name.equals("NE"))	return 11;
+		
+		return -2;
+	}
+	
+	char series(int low, int high)
+	{
+		int[] 	points =  new int[2];
+		char[] 	playoffGame = new char[4];
+
+		// Play game 1
+		playoffGame[0] = getResult(high,low, 2);
+		if (playoffGame[0] == 'W')
+				points[0] += 3;
+		if (playoffGame[0] == 'T')
+				points[0] += 1;
+		if (playoffGame[0] == 'T')
+				points[1] += 1;
+		if (playoffGame[0] == 'L')
+				points[1] += 3;
+				
+
+		// Play game 2
+		playoffGame[1] = getResult(low, high, 2);
+		if (playoffGame[1] == 'W')
+				points[1] += 3;
+		if (playoffGame[1] == 'T')
+				points[1] += 1;
+		if (playoffGame[1] == 'T')
+				points[0] += 1;
+		if (playoffGame[1] == 'L')
+				points[0] += 3;
+		
+		if (points[0] > 4)
+			return 'W';
+		if (points[1] > 4)
+			return 'L';
+
+		// Play game 3 (if neccesary)
+		playoffGame[2] = getResult(high,low, 2);
+		if (playoffGame[2] == 'W')
+				points[0] += 3;
+		if (playoffGame[2] == 'T')
+				points[0] += 1;
+		if (playoffGame[2] == 'T')
+				points[1] += 1;
+		if (playoffGame[2] == 'L')
+				points[1] += 3;
+
+		if (points[0] > 4)
+			return 'W';
+		if (points[1] > 4)
+			return 'L';
+
+
+		// Play mini-game (if neccesary)
+
+		playoffGame[2] = getResult(high,low, 2);
+		if (playoffGame[3] == 'W')
+				points[0] += 3;
+		if (playoffGame[3] == 'T')
+				points[0] += 1;
+		if (playoffGame[3] == 'T')
+				points[1] += 1;
+		if (playoffGame[3] == 'L')
+				points[1] += 3;
+
+		if (points[0] > 4)
+			return 'W';
+		if (points[1] > 4)
+			return 'L';
+
+		
+		// Play PK's
+		if (points[0] == points[1])
+		{
+			double random = Math.round(Math.random()*2+1);
+			
+			if (random == 3)
+				return ('L');
+
+			else
+				return ('W');
+		}
+		return 'W';
+	}
+
+
+	public void actionPerformed(ActionEvent event)
+	{
+
+		if (type.getSelectedIndex() == 0)
+			//System.out.println("week == " + (stype.length - 3));
+			week = stype.length - 3;
+		else if (type.getSelectedIndex() == stype.length - 2)
+			week = -1;
+		else if (type.getSelectedIndex() == stype.length - 1)
+			week = -2;
+		else 
+			//		System.out.println("week == " + type.getSelectedIndex());
+			week = type.getSelectedIndex();
+			
+		for (int i = 0; i < 12; i++)
+		{
+			if(event.getSource() == plus[i])
+			{
+				stemp = (tSkill[i].getText());
+				temp = Integer.parseInt(stemp);				
+				temp++;
+				stemp = Integer.toString(temp);
+				tSkill[i].setText(stemp);
+			}
+
+			if(event.getSource() == minus[i])
+			{
+				stemp = (tSkill[i].getText());
+				temp = Integer.parseInt(stemp);				
+				if (temp != 0) temp--;
+				stemp = Integer.toString(temp);
+				tSkill[i].setText(stemp);
+			}
+		}
+
+		for (int i = 12; i < 24; i++)
+		{
+			if(event.getSource() == plus[i])
+			{
+				stemp = (tHFA[i-12].getText());
+				temp = Integer.parseInt(stemp);				
+				temp++;
+				stemp = Integer.toString(temp);
+				tHFA[i-12].setText(stemp);
+			}
+
+			if(event.getSource() == minus[i])
+			{
+				stemp = (tHFA[i-12].getText());
+				temp = Integer.parseInt(stemp);				
+				if (temp != 0) temp--;
+				stemp = Integer.toString(temp);
+				tHFA[i-12].setText(stemp);
+			}
+		}
+			
+		if(event.getSource() == run)
+		{
+			for (int i = 0; i < 12; i++)
+			{
+				stemp = tSkill[i].getText();
+				team[i].setSkill(Integer.parseInt(stemp));
+			}
+
+			for (int i = 0; i < 12; i++)
+			{
+				stemp = tHFA[i].getText();
+				team[i].setHFA(Integer.parseInt(stemp));
+			}
+		
+			program();
+		}
+	}
+	
+	public void itemStateChanged(ItemEvent event)
+	{
+		
+	}
+
+	
+	public void game(int h, char hr, int a,  boolean div)
+	{
+		if (div == false)
+		{
+			team[h].setHomeGame(a, hr);
+			team[a].setAwayGame(h, opposite(hr));
+		}
+		
+		if (div == true)
+		{
+			team[h].setHomeDivGame(a, hr);
+			team[a].setAwayDivGame(h, opposite(hr));
+		}
+	}
+	
+	
+	public void placeValues(int a)
+	{
+		for (int i = 0; i < 12; i++)
+		{
+			tSkill[i].setText(i2s(team[i].getSkill()));
+			tHFA[i].setText(i2s(team[i].getHFA()));
+			if (a == 1)
+			{
+				tgamesPlayed[i].setText(i2s(team[i].getGames()));
+				twins[i].setText(i2s(team[i].getWins()));
+				tties[i].setText(i2s(team[i].getTies()));
+				tlosses[i].setText(i2s(team[i].getLosses()));
+				tpoints[i].setText(i2s(team[i].getPoints()));
+			}
+		}
+	}
+
+	char opposite(char r)
+	{
+			if 		(r == 'W') return 'L';
+			else if (r == 'L') return 'W';
+			else if (r == 'T') return 'T';
+			return 'x';
+	}
+
+	public String i2s(int temp)
+	{
+		return Integer.toString(temp);
+	}
+
+	public String d2s(double dtemp)
+	{
+		Double doubotemp = new Double(dtemp);
+		return doubotemp.toString();
+	}
+	
+	public int s2i(String stemp)
+	{
+		return Integer.parseInt(stemp);
+	}
+
+
+	public void playedGames()
+	{
+		if (week > 0)
+		{
+			game(0,  'L', 2, false);
+			game(9,  'W', 11, false);
+			game(8,  'W', 1, false);
+			game(10, 'W', 3, false);
+			game(7,  'T', 4, false);
+			game(5,  'L', 6, false);
+		}
+		
+		if (week > 1)
+		{
+			game(2,  'L', 5, false);
+			game(6,  'L', 7, false);
+			game(11, 'L', 10, false);
+			game(1,  'W', 0, false);
+			game(3,  'T', 9, false);
+			game(4,  'W', 8, false);
+		}
+		
+		if (week > 2)
+		{
+			game(1,   'W', 10, false);
+			game(0,   'W', 3, false);
+			game(9 ,  'L', 6, false);
+			game( 5,  'W', 7, false);
+			game( 10, 'W', 2, false);
+			game( 7,  'L', 1, false);
+			game( 8,  'W', 11, false);
+		}
+		
+		if (week > 3)
+		{
+			game(3  ,'L' ,0 , false);
+			game(6  ,'L' ,4 , false);
+			game(9  ,'W' ,5 , false);
+			game(10 ,'W' ,11, false);
+			game(1  ,'T' ,2, false);
+		}
+		
+		if (week > 4)
+		{
+			game(9 ,'W' , 1 , false);
+			game(0 ,'W' , 1 , false);
+			game(7 ,'T' , 10, false);
+			game(9 ,'W' , 8 , false);
+			game(4 ,'W' , 6 , false);
+			game(5 ,'L' , 3 , false);
+			game(2 ,'W' , 11, false);
+		}
+		
+		if (week > 5)
+		{
+			game( 6, 'T', 0, false);
+			game( 8, 'W', 11, true);
+//			game( 8,  '', 4, false);
+//			game( 9,  '', 0, false);
+//			game( 5,  '', 7, false);
+//			game( 3,  '', 6, false);
+		}
+		
+		/*int home;
+		home = 0;
+			game(home, 1, 'W', false);
+			game(home, 2, 'L', false);
+			game(home, 3, 'W', false);
+			//game(home, 4, 'W', false);
+			//game(home, 5, 'W', false);
+			//game(home, 6, 'W', false);
+			//game(home, 7, 'W', false);
+			//game(home, 8, 'W', false);
+			//game(home, 9, 'W', false);
+			//game(home, 10, 'W', false);
+			//game(home, 11, 'W', false);
+
+			//game(home, 1, 'W', true);
+			//game(home, 2, 'W', true);
+			//game(home, 3, 'W', true);
+			
+		home = 1;
+			game(home, 0, 'W', false);
+			game(home, 2, 'T', false);
+			//game(home, 3, 'W', false);
+			//game(home, 4, 'W', false);
+			//game(home, 5, 'W', false);
+			//game(home, 6, 'W', false);
+			//game(home, 7, 'W', false);
+			//game(home, 8, 'W', false);
+			//game(home, 9, 'W', false);
+			game(home, 10, 'W', false);
+			//game(home, 11, 'W', false);
+			
+			//game(home, 0, 'W', true);
+			//game(home, 2, 'W', true);
+			//game(home, 3, 'W', true);
+
+		home = 2;
+			//game(home, 0, 'W', false);
+			//game(home, 1, 'W', false);
+			//game(home, 3, 'W', false);
+			//game(home, 4, 'W', false);
+			game(home, 5, 'L', false);
+			//game(home, 6, 'W', false);
+			//game(home, 7, 'W', false);
+			//game(home, 8, 'W', false);
+			//game(home, 9, 'W', false);
+			//game(home, 10, 'W', false);
+			game(home, 11, 'W', false);
+
+			//game(home, 0, 'W', true);
+			//game(home, 1, 'W', true);
+			//game(home, 3, 'W', true);
+		
+		home = 3;
+			game(home, 0, 'L', false);
+			//game(home, 1, 'W', false);
+			//game(home, 2, 'W', false);
+			//game(home, 4, 'W', false);
+			//game(home, 5, 'W', false);
+			//game(home, 6, 'W', false);
+			//game(home, 7, 'W', false);
+			//game(home, 8, 'W', false);
+			game(home, 9, 'T', false);
+			//game(home, 10, 'W', false);
+			//game(home, 11, 'W', false);
+			
+			//game(home, 0, 'W', true);
+			//game(home, 1, 'W', true);
+			//game(home, 2, 'W', true);
+		
+		home = 4;
+			//game(home, 0, 'W', false);
+			//game(home, 1, 'W', false);
+			//game(home, 2, 'W', false);
+			//game(home, 3, 'W', false);
+			//game(home, 5, 'W', false);
+			game(home, 6, 'W', false);
+			//game(home, 7, 'W', false);
+			game(home, 8, 'W', false);
+			//game(home, 9, 'W', false);
+			//game(home, 10, 'W', false);
+			//game(home, 11, 'W', false);
+			//game(home, 4, 'W', true);
+			//game(home, 5, 'W', true);
+			//game(home, 6, 'W', true);
+			//game(home, 7, 'W', true);
+		
+		home = 5;
+			//game(home, 0, 'W', false);
+			//game(home, 1, 'W', false);
+			//game(home, 2, 'W', false);
+			game(home, 3, 'L', false);
+			//game(home, 4, 'W', false);
+			game(home, 6, 'L', false);
+			game(home, 7, 'W', false);
+			//game(home, 8, 'W', false);
+			//game(home, 9, 'W', false);
+			//game(home, 10, 'W', false);
+			//game(home, 11, 'W', false);
+			//game(home, 4, 'W', true);
+			//game(home, 5, 'W', true);
+			//game(home, 6, 'W', true);
+			//game(home, 7, 'W', true);
+		
+		home = 6;
+			game(home, 0, 'T', false);
+			//game(home, 1, 'W', false);
+			//game(home, 2, 'W', false);
+			//game(home, 3, 'W', false);
+			game(home, 4, 'L', false);
+			//game(home, 5, 'W', false);
+			game(home, 7, 'L', false);
+			//game(home, 8, 'W', false);
+			//game(home, 9, 'W', false);
+			//game(home, 10, 'W', false);
+			//game(home, 11, 'W', false);
+			//game(home, 4, 'W', true);
+			//game(home, 5, 'W', true);
+			//game(home, 6, 'W', true);
+			//game(home, 7, 'W', true);
+		
+		home = 7;
+			//game(home, 0, 'W', false);
+			game(home, 1, 'L', false);
+			//game(home, 2, 'W', false);
+			//game(home, 3, 'W', false);
+			game(home, 4, 'T', false);
+			//game(home, 5, 'W', false);
+			//game(home, 6, 'W', false);
+			//game(home, 8, 'W', false);
+			//game(home, 9, 'W', false);
+			game(home, 10, 'T', false);
+			//game(home, 11, 'W', false);
+			
+			//game(home, 4, 'W', true);
+			//game(home, 5, 'W', true);
+			//game(home, 6, 'W', true);
+			//game(home, 7, 'W', true);
+		home = 8;
+			//game(home, 0, 'W', false);
+			game(home, 1, 'W', false);
+			//game(home, 2, 'W', false);
+			//game(home, 3, 'W', false);
+			//game(home, 4, 'W', false);
+			//game(home, 5, 'W', false);
+			//game(home, 6, 'W', false);
+			//game(home, 7, 'W', false);
+			//game(home, 9, 'W', false);
+			//game(home, 10, 'W', false);
+			game(home, 11, 'W', false);
+
+			//game(home, 9, 'W', true);
+			//game(home, 10, 'W', true);
+			game(home, 11, 'W', true);
+		
+		home = 9;
+			//game(home, 0, 'W', false);
+			game(home, 1, 'W', false);
+			//game(home, 2, 'W', false);
+			//game(home, 3, 'W', false);
+			//game(home, 4, 'W', false);
+			game(home, 5, 'W', false);
+			game(home, 6, 'L', false);
+			//game(home, 7, 'W', false);
+			game(home, 8, 'W', false);
+			//game(home, 10, 'W', false);
+			game(home, 11, 'W', false);
+
+			//game(home, 8, 'W', true);
+			//game(home, 10, 'W', true);
+			//game(home, 11, 'W', true);
+		
+		home = 10;
+			//game(home, 0, 'W', false);
+			//game(home, 1, 'W', false);
+			game(home, 2, 'W', false);
+			game(home, 3, 'W', false);
+			//game(home, 4, 'W', false);
+			//game(home, 5, 'W', false);
+			//game(home, 6, 'W', false);
+			//game(home, 7, 'W', false);
+			//game(home, 8, 'W', false);
+			//game(home, 9, 'W', false);
+			game(home, 11, 'W', false);
+			
+			//game(home, 8, 'W', true);
+			//game(home, 9, 'W', true);
+			//game(home, 11, 'W', true);
+		
+		home = 11;
+			//game(home, 0, 'W', false);
+			//game(home, 1, 'W', false);
+			//game(home, 2, 'W', false);
+			//game(home, 3, 'W', false);
+			//game(home, 4, 'W', false);
+			//game(home, 5, 'W', false);
+			//game(home, 6, 'W', false);
+			//game(home, 7, 'W', false);
+			//game(home, 8, 'W', false);
+			//game(home, 9, 'W', false);
+			game(home, 10, 'L', false);
+
+			//game(home, 8, 'W', true);
+			//game(home, 9, 'W', true);
+			//game(home, 10, 'W', true);*/
+	}
+	
+	public void createGUI()
+	{
+		setLayout(null);
+		
+		for (int i = 0; i < 12; i++)		
+		{
+			add(teamName[i] = new Label(team[i].getName()));
+			
+			if (i == 4 || i == 8) temp += 20;
+			if (i == 0) temp += 20;
+
+			teamName[i].setBounds(5, (i*20)+temp+20, 20, 20);
+		}	
+		/////////////////////////////////////
+		Label sLabel = new Label("Skill");
+		Label aLabel = new Label("Advantage");
+		
+		add(sLabel);
+		add(aLabel);
+		
+		sLabel.setBounds(40, 20, 40, 20);
+		aLabel.setBounds(85, 20, 70, 20);		
+		/////////////////////////////////////
+				
+		temp = 20;
+		
+		for (int i = 0; i < 12; i++)
+		{
+			tSkill[i]   = new Label("", tSkill[i].CENTER);
+			tHFA[i] 	= new Label("", tHFA[i].CENTER);
+			minus[i]	= new Button("-");
+			plus[i]		= new Button("+");
+			minus[i+12]	= new Button("-");
+			plus[i+12]	= new Button("+");
+				
+			add(tSkill[i]);
+			add(tHFA[i]);
+			add(minus[i]);
+			add(plus[i]);
+			add(minus[i+12]);
+			add(plus[i+12]);
+
+			if (i == 4 || i == 8) temp += 20;
+
+			tSkill[i].setBounds( 40,  (i*20)+temp+20, 30, 20 );
+			tHFA[i].setBounds(   100, (i*20)+temp+20, 30, 20 );
+
+			minus[i].setBounds(    30,  (i*20)+temp+20, 10, 20 );
+			plus[i].setBounds(     70,  (i*20)+temp+20, 10, 20 );
+			minus[i+12].setBounds( 90,  (i*20)+temp+20, 10, 20 );
+			plus[i+12].setBounds(  130, (i*20)+temp+20, 10, 20 );
+		}
+		/////////////////////////////////////
+		division[0] = new Label("WEST");		
+		division[1] = new Label("CENTRAL");		
+		division[2] = new Label("EAST");
+
+		add(division[0]);
+		add(division[1]);
+		add(division[2]);
+		
+		division[0].setBounds( 244, 0, 100, 20);
+		division[1].setBounds( 433, 0, 100, 20);
+		division[2].setBounds( 647, 0, 100, 20);
+		/////////////////////////////////////
+		for (int i = 0; i < 4; i++)		
+		{
+			add(teamName2[i] = new Label(team[i].getName()));
+			
+			teamName2[i].setBounds(170, (i*20)+40, 20, 20);
+		}	
+		for (int i = 4; i < 8; i++)		
+		{
+			add(teamName2[i] = new Label(team[i].getName()));
+			
+			teamName2[i].setBounds(370, ((i-4)*20)+40, 20, 20);
+		}	
+		for (int i = 8; i < 12; i++)		
+		{
+			add(teamName2[i] = new Label(team[i].getName()));
+			
+			teamName2[i].setBounds(570, ((i-8)*20)+40, 20, 20);
+		}	
+		/////////////////////////////////////
+		Label[] gamesPlayed   = new Label[3];
+		Label[] wins   = new Label[3];
+		Label[] ties   = new Label[3];
+		Label[] losses = new Label[3];
+		Label[] points = new Label[3];		
+		
+		for (int i = 0; i < 3; i++)		
+		{
+			add(gamesPlayed[i] = new Label("GP"));
+			gamesPlayed[i].setBounds(200+(i*200), 20, 20, 20);
+		
+			add(wins[i] = new Label("W"));
+			wins[i].setBounds(230+(i*200), 20, 20, 20);
+			
+			add(ties[i] = new Label("T"));
+			ties[i].setBounds(260+(i*200), 20, 20, 20);
+			
+			add(losses[i] = new Label("L"));
+			losses[i].setBounds(290+(i*200), 20, 20, 20);
+			
+			add(points[i] = new Label("Pts"));
+			points[i].setBounds(320+(i*200), 20, 20, 20);
+			
+		}	
+		/////////////////////////////////////
+		for (int i = 0; i < 4; i++)
+		{
+			add(tgamesPlayed[i] = new Label("xx"));
+			tgamesPlayed[i].setBounds(200, 40+((i-0)*20), 20, 20);
+			
+			add(twins[i] = new Label("x"));
+			twins[i].setBounds(230, 40+((i-0)*20), 20, 20);
+			
+			add(tties[i] = new Label("x"));
+			tties[i].setBounds(260, 40+((i-0)*20), 20, 20);
+			
+			add(tlosses[i] = new Label("x"));
+			tlosses[i].setBounds(290, 40+((i-0)*20), 20, 20);
+			
+			add(tpoints[i] = new Label("x"));
+			tpoints[i].setBounds(320, 40+((i-0)*20), 20, 20);
+		
+		}
+		
+		for (int i = 4; i < 8; i++)		
+		{
+			add(tgamesPlayed[i] = new Label("xx"));
+			tgamesPlayed[i].setBounds(400, 40+((i-4)*20), 20, 20);
+			
+			add(twins[i] = new Label("x"));
+			twins[i].setBounds(430, 40+((i-4)*20), 20, 20);
+			
+			add(tties[i] = new Label("x"));
+			tties[i].setBounds(460, 40+((i-4)*20), 20, 20);
+			
+			add(tlosses[i] = new Label("x"));
+			tlosses[i].setBounds(490, 40+((i-4)*20), 20, 20);
+			
+			add(tpoints[i] = new Label("x"));
+			tpoints[i].setBounds(520, 40+((i-4)*20), 20, 20);
+		}
+		
+		for (int i = 8; i < 12; i++)		
+		{
+			add(tgamesPlayed[i] = new Label("xx"));
+			tgamesPlayed[i].setBounds(600, 40+((i-8)*20), 20, 20);
+			
+			add(twins[i] = new Label("x"));
+			twins[i].setBounds(630, 40+((i-8)*20), 20, 20);
+			
+			add(tties[i] = new Label("x"));
+			tties[i].setBounds(660, 40+((i-8)*20), 20, 20);
+			
+			add(tlosses[i] = new Label("x"));
+			tlosses[i].setBounds(690, 40+((i-8)*20), 20, 20);
+			
+			add(tpoints[i] = new Label("x"));
+			tpoints[i].setBounds(720, 40+((i-8)*20), 20, 20);
+		}
+		/////////////////////////////////////
+		/*Label[] seed = new Label[8];
+		Label champion = new Label("Champion");
+		
+		add(seed[0] = new Label("1"));
+		add(seed[7] = new Label("8"));
+		
+		add(seed[5] = new Label("6"));
+		add(seed[4] = new Label("5"));
+		
+		add(seed[1] = new Label("2"));
+		add(seed[6] = new Label("7"));
+		
+		add(seed[3] = new Label("4"));
+		add(seed[2] = new Label("3"));
+		
+		seed[0].setBounds( 155, 140, 15, 20);
+		seed[7].setBounds( 155, 194, 15, 20);
+		
+		seed[4].setBounds( 155, 248, 15, 20);
+		seed[3].setBounds( 155, 302, 15, 20);
+		
+		seed[1].setBounds( 730, 140, 20, 20);
+		seed[6].setBounds( 730, 194, 20, 20);
+		
+		seed[5].setBounds( 730, 248, 20, 20);
+		seed[2].setBounds( 730, 302, 20, 20);
+
+		int PLAYOFF_WIDTH = 90;
+		for (int i = 0; i < 4; i++)
+		{
+			add(playoffs[i] = new Label());
+//			playoffs[i].setEditable(false);
+		
+			playoffs[i].setBounds( 170, 140+(i*54), PLAYOFF_WIDTH, 20);
+		}
+		
+		for (int i = 4; i < 8; i++)
+		{
+			add(playoffs[i] = new Label());
+//			playoffs[i].setEditable(false);
+		
+			playoffs[i].setBounds( 640, 140+((i-4)*54), PLAYOFF_WIDTH, 20);
+		}
+		
+		for (int i = 8; i < 10; i++)
+		{
+			add(playoffs[i] = new Label());
+//			playoffs[i].setEditable(false);
+		
+			playoffs[i].setBounds( 240, 383+(2*((i-10)*54)), PLAYOFF_WIDTH, 20);
+		}
+		
+		for (int i = 10; i < 12; i++)
+		{
+			add(playoffs[i] = new Label());
+	//		playoffs[i].setEditable(false);
+		
+			playoffs[i].setBounds( 570, 383+(2*((i-12)*54)), PLAYOFF_WIDTH, 20);
+		}
+
+		for (int i = 12; i < 14; i++)
+		{
+			add(playoffs[i] = new Label());
+	//		playoffs[i].setEditable(false);
+		
+			playoffs[i].setBounds( 310+((i-12)*190), 220, PLAYOFF_WIDTH, 20);
+		}
+
+		//add(champion);
+		champion.setBounds( 416, 228, 70, 20);		
+		add(playoffs[14] = new Label());
+		playoffs[14].setBounds( 404, 228, PLAYOFF_WIDTH, 20);*/
+		/////////////////////////////////////
+
+		run 			= new Button("Run Season");
+		type     		= new Choice();
+
+		//CheckboxGroup cbg = new CheckboxGroup();
+		
+		//type[0]			= new Checkbox(" Full random season", cbg, false);
+		//type[1]			= new Checkbox(" Full current season", cbg, false);
+		//type[2]			= new Checkbox(" Current seasons stats", cbg, true);
+		
+		//for (int i = 0; i < 3; i++)
+		//{
+		//	add(type[i]);
+		//	type[i].setBounds(30, 322 + (20*i), 150, 20);
+		//}
+	
+		add(run);	
+		add(type);
+		
+		for (int i = 0; i < stype.length; i++)
+			type.add(stype[i]);
+		
+		run.setBounds( 		 30, 390, 110, 20);
+		
+		type.setBounds(150, 390, 400, 20);
+
+		/////////////////////////////////////
+		
+		stats 			= new Label[cols][rows];
+		
+		for (int i = 0; i < cols; i++)
+			for (int j = 0; j < rows; j++)
+				stats[i][j] = new Label();
+		
+		for (int i = 0; i < cols; i++)
+			for (int j = 0; j < rows; j++)
+			{
+				add(stats[i][j]);
+				stats[i][j].setBounds(30+(i*90), 420+(j*20), 80, 20);
+			}
+		
+		for (int i = 0; i < cols; i++)
+			for (int j = 0; j < rows; j++)
+				stats[i][j].setText("xxx");
+		for (int i = 1; i < rows; i++)
+			stats[0][i].setText(team[i-1].getName());
+		
+
+		stats[0][0].setText("Team");
+		stats[1][0].setText("Points Rank");
+		stats[2][0].setText("Win %");
+		stats[3][0].setText("Sched. rank");
+		stats[4][0].setText("Oppon. Win %");
+		stats[5][0].setText("MLS-Ri");
+		stats[6][0].setText("LGP-Ri");
+		stats[7][0].setText("Fluke Factor");
+		////////////////////////////////////////////////////////
+
+		for (int i = 0; i < 9; i++)
+			for (int j = 0; j < 13; j++)
+				add(rankings[i][j] = new Label());
+
+		for (int i = 0; i < 13; i++)		
+			rankings[0][i].setBounds(180, 125+(i*20), 47, 20);
+
+		for (int i = 0; i < 13; i++)
+			rankings[1][i].setBounds(230, 125+(i*20), 45, 20);
+		
+		for (int i = 0; i < 13; i++)
+			rankings[2][i].setBounds(275, 125+(i*20), 45, 20);
+
+		for (int i = 0; i < 13; i++)
+			rankings[3][i].setBounds(340, 125+(i*20), 45, 20);
+
+		for (int i = 0; i < 13; i++)
+			rankings[4][i].setBounds(385, 125+(i*20), 50, 20);
+
+		for (int i = 0; i < 13; i++)
+			rankings[5][i].setBounds(470, 125+(i*20), 45, 20);
+
+		for (int i = 0; i < 13; i++)
+			rankings[6][i].setBounds(515, 125+(i*20), 50, 20);
+
+		for (int i = 0; i < 13; i++)
+			rankings[7][i].setBounds(585, 125+(i*20), 75, 20);
+
+		for (int i = 0; i < 13; i++)
+			rankings[8][i].setBounds(660, 125+(i*20), 50, 20);
+
+		rankings[0][0].setText("Rank");
+		rankings[1][0].setText("Points");
+		rankings[3][0].setText("LGP-Ri");
+		rankings[5][0].setText("MLS-Ri");
+		rankings[7][0].setText("Fluke Factor");
+	}
+}
+
+public class Team
+{
+	private int 	skill;
+	private int 	hfa;
+	private int 	rank;
+	private int 	points;
+	private int 	wins;
+	private int 	ties;
+	private int 	losses;
+	private int 	teamNumber;
+	private int 	division;
+	private int    	ssrank;
+	private int    	ffrank;
+	private int    	rirank;
+	private int    	gprank;
+	private int    	drank;
+	private int 	games;
+	private double  gamePoints;
+	private double  rating;
+	private double  LGPRating;
+	private double  winpct;
+	private double  owinpct;
+	private double  owinpctavg;
+	private double  opoints;
+	private int		ogames;
+	private String 	name;
+	private String 	fullName;
+
+	
+	private char[] 	homeGame 		= new char[12];
+	private char[] 	homeDivGame 	= new char[12];
+	private char[] 	awayGame 		= new char[12];
+	private char[] 	awayDivGame 	= new char[12];
+	
+	public Team(String name, int skill, int hfa, int division, int teamNumber)
+	{
+		this.name = name;
+		this.skill = skill;
+		this.hfa = hfa;
+		this.division = division;
+		this.teamNumber = teamNumber;
+		rank = 12;
+		ssrank = 11;
+		rirank = 11;
+		gprank = 11;
+		
+			
+		if (name.equals("LA"))	fullName = "Los Angeles";
+		if (name.equals("KC"))	fullName = "Kansas City";
+		if (name.equals("SJ"))	fullName = "San Jose";
+		if (name.equals("CO"))	fullName = "Colorado";
+		if (name.equals("CH"))	fullName = "Chicago";
+		if (name.equals("DA"))	fullName = "Dallas";
+		if (name.equals("TB"))	fullName = "Tampa Bay";
+		if (name.equals("CB"))	fullName = "Columbus";
+		if (name.equals("DC"))	fullName = "Washinton DC";
+		if (name.equals("NY"))	fullName = "New York";
+		if (name.equals("MI"))	fullName = "Miami";
+		if (name.equals("NE"))	fullName = "New England";
+
+		if (name.equals("NY"))	drank = 0;
+		if (name.equals("KC"))	drank = 1;
+		if (name.equals("MI"))	drank = 2;
+		if (name.equals("CH"))	drank = 3;
+		if (name.equals("DC"))	drank = 4;
+		if (name.equals("TB"))	drank = 5;
+		if (name.equals("LA"))	drank = 6;
+		if (name.equals("DA"))	drank = 7;
+		if (name.equals("SJ"))	drank = 8;
+		if (name.equals("CB"))	drank = 9;
+		if (name.equals("CO"))	drank = 10;
+		if (name.equals("NE"))	drank = 11;
+	}
+	
+	void setName(String name)
+	{
+		this.name = name;
+	}
+
+	String getName()
+	{
+		return name;
+	}
+
+	String getFullName()
+	{
+		return fullName;
+	}
+	
+	void setSkill(int skill)
+	{
+		this.skill = skill;
+	}
+	
+	int getSkill()
+	{
+		return skill;
+	}
+		
+	void setHFA(int hfa)
+	{
+		this.hfa = hfa;
+	}
+	
+	int getHFA()
+	{
+		return hfa;
+	}
+
+	void setRank(int rank)
+	{
+		this.rank = rank;
+	}
+	
+	int getRank()
+	{
+		return rank;
+	}
+	
+	void setDRank(int drank)
+	{
+		this.drank = drank;
+	}
+	
+	int getDRank()
+	{
+		return drank;
+	}
+
+	void setSSRank(int ssrank)
+	{
+		this.ssrank = ssrank;
+	}
+	
+	int getSSRank()
+	{
+		return ssrank;
+	}
+	
+	void setRIRank(int rirank)
+	{
+		this.rirank = rirank;
+	}
+	
+	int getRIRank()
+	{
+		return rirank;
+	}
+	
+	void setGPRank(int gprank)
+	{
+		this.gprank = gprank;
+	}
+	
+	int getGPRank()
+	{
+		return gprank;
+	}
+	
+	void setFFRank(int ffrank)
+	{
+		this.ffrank = ffrank;
+	}
+	
+	int getFFRank()
+	{
+		return ffrank;
+	}
+	
+	void setPoints(int points)
+	{
+		this.points = points;
+	}
+	
+	int getPoints()
+	{
+		return points;
+	}
+	
+	void setOPoints(int opoints)
+	{
+		this.opoints = opoints;
+	}
+	
+	void addOPoints(int x)
+	{
+		opoints += x;
+	}
+	
+	double getOPoints()
+	{
+		return opoints;
+	}
+	
+	double getOPointsAverage()
+	{
+		return opoints/getGames();
+	}
+	
+	void setDivision(int division)
+	{
+		this.division = division;
+	}
+	
+	int getDivision()
+	{
+		return division;
+	}
+
+	int getGames()
+	{
+		games = wins + ties + losses;
+		return games;
+	}
+
+	int getWins()
+	{
+		return wins;
+	}
+
+	int getTies()
+	{
+		return ties;
+	}
+
+	int getLosses()
+	{
+		return losses;
+	}
+	
+	void setTeamNumber(int teamNumber)
+	{
+		this.teamNumber = teamNumber;
+	}
+	
+	void setHomeGame(int opponent, char result)
+	{
+		homeGame[opponent] = result;	
+	}
+	
+	void setHomeDivGame(int opponent, char result)
+	{
+		homeDivGame[opponent] = result;	
+	}
+	
+	void setAwayGame(int opponent, char result)
+	{
+		awayGame[opponent] = result;	
+	}
+	
+	void setAwayDivGame(int opponent, char result)
+	{
+		awayDivGame[opponent] = result;	
+	}
+
+	char getHomeGame(int opponent)
+	{
+		return homeGame[opponent];	
+	}
+	
+	char getHomeDivGame(int opponent)
+	{
+		return homeDivGame[opponent];	
+	}
+	
+	char getAwayGame(int opponent)
+	{
+		return awayGame[opponent];	
+	}
+	
+	char getAwayDivGame(int opponent)
+	{
+		return awayDivGame[opponent];	
+	}
+
+	void setGamePoints(int x)
+	{
+		gamePoints = x;
+	}
+	
+	void addGamePoints(int x)
+	{
+		gamePoints += x;
+	}
+	
+	double getGamePoints()
+	{
+		return gamePoints;
+	}
+
+	int nameToNumber(String name)
+	{
+		if (name.equals("Los Angeles"))		return 0;
+		if (name.equals("Kansas City"))		return 1;
+		if (name.equals("San Jose"))		return 2;
+		if (name.equals("Colorado"))		return 3;
+		if (name.equals("Chicago"))			return 4;;
+		if (name.equals("Dallas"))			return 5;
+		if (name.equals("Tampa Bay"))		return 6;
+		if (name.equals("Columbus"))		return 7;
+		if (name.equals("Washinton DC"))	return 8;
+		if (name.equals("New York"))		return 9;
+		if (name.equals("Miami"))			return 10;
+		if (name.equals("New England"))		return 11;
+
+		return -1;	
+	}
+		
+	void calculatePoints()
+	{
+		for (int i = 0; i < 12; i++)
+		{
+			if (homeGame[i]	== 'W')
+				wins++;
+
+			if (homeGame[i]	== 'T')
+				ties++;
+			
+			if (homeGame[i]	== 'L')
+				losses++;
+
+			if (awayGame[i] == 'W')
+				wins++;
+			
+			if (awayGame[i] == 'T')
+				ties++;
+			
+			if (awayGame[i] == 'L')
+				losses++;
+		}
+		
+		for (int i = 0; i < 12; i++)
+		{
+			if (homeDivGame[i] == 'W')
+				wins++;
+
+			if (homeDivGame[i] == 'T')
+				ties++;
+			
+			if (homeDivGame[i] == 'L')
+				losses++;
+
+			if (awayDivGame[i] == 'W')
+				wins++;
+			
+			if (awayDivGame[i] == 'T')
+				ties++;
+			
+			if (awayDivGame[i] == 'L')
+				losses++;
+		}
+		
+		points = (wins * 3) + ties;
+	}
+	
+	void reset()
+	{
+		rank = 11;
+		ssrank = 11;
+		rirank = 11;
+		ffrank = 11;
+		gprank = 11;
+		points = 0;
+		wins = 0;
+		ties = 0;
+		losses = 0;
+		gamePoints = 0;
+		rating = 0;
+		opoints = 0;
+		owinpct = 0;
+		winpct = 0;
+		ogames = 0;
+
+		for (int i = 0; i < 12; i++)
+		{
+			for (int j = 0; j < 12; j++)
+			{
+				homeGame[i] = 'x';
+				awayGame[i] = 'x';
+			
+				if (j < 4)
+				{
+					homeDivGame[i] = 'x';
+					awayDivGame[i] = 'x';
+				}
+
+				if (j > 8)
+				{
+					homeDivGame[i] = 'x';
+					awayDivGame[i] = 'x';
+				}
+
+				if ((j > 3) && (j < 8))
+				{
+					homeDivGame[i] = 'x';
+					awayDivGame[i] = 'x';
+				}
+			}
+		}
+	}
+	
+	void setPlayoffSkill()
+	{
+		skill = ((8-rank) + skill);
+		hfa   = (hfa+2);
+		
+		if (rank == 0)			skill = 1000;
+		if (rank == 1)			skill = 600;
+		if (rank == 2)			skill = 450;
+		if (rank == 3)			skill = 300;
+		if (rank == 4)			skill = 250;
+		if (rank == 5)			skill = 150;
+		if (rank == 6)			skill = 100;
+		if (rank == 7)			skill = 40;
+		if (rank == 8)			skill = 20;
+		if (rank == 9)			skill = 10;
+		if (rank == 10)			skill = 5;
+		if (rank == 11)			skill = 1;
+	}
+	
+	void calculateGamePoints()
+	{
+		for (int i = 0; i < 12; i++)
+		{
+			if (homeGame[i] == 'W')
+				gamePoints += 0;
+			if (awayGame[i] == 'W')
+				gamePoints += 0;
+			if (homeGame[i] == 'T')
+				gamePoints += 1;
+			if (awayGame[i] == 'T')
+				gamePoints += .5;
+			if (homeGame[i] == 'L')
+				gamePoints += 2;
+			if (awayGame[i] == 'L')
+				gamePoints += 1.5;
+			
+			if (homeDivGame[i] == 'W')
+				gamePoints += .5;
+			if (awayDivGame[i] == 'W')
+				gamePoints += 0;
+			if (homeDivGame[i] == 'T')
+				gamePoints += 1.5;
+			if (awayDivGame[i] == 'T')
+				gamePoints += 1;
+			if (homeDivGame[i] == 'L')
+				gamePoints += 2;
+			if (awayDivGame[i] == 'L')
+				gamePoints += 1.5;
+		}
+	}
+	
+	void calculateWinPercentage()
+	{
+		winpct =  (double)points/((wins+ties+losses)*3);
+		winpct = roundDouble(winpct, 1000, 1000);
+	}
+
+	double getWinPercentage()
+	{
+		return winpct;
+	}
+	
+	void addOWinPercentage(double owp)
+	{
+		owinpct += owp;
+		owinpct = roundDouble(owinpct, 1000, 1000);
+	}
+	
+	void addOGames(double og)
+	{
+		ogames += og;
+	}
+
+	int getOGames()
+	{
+		return ogames;
+	}
+	
+	void calculateOWinPercentage()
+	{
+		owinpctavg = owinpct/games;
+		owinpctavg = roundDouble(owinpctavg, 1000, 1000);
+	}
+	
+	double getOWinPercentage()
+	{
+		return owinpct;
+	}
+	
+	double getOWinPercentageAvg()
+	{
+		return owinpctavg;
+	}
+	
+	void calculateRating()
+	{
+		rating = ((12-rank) + (winpct*(12)) + (owinpctavg*(12))) ;
+		rating = roundDouble(rating, 1000, 1000);
+	}
+
+	void calculateLGPRating()
+	{
+		gamePoints = (gamePoints/games)*7;
+		gamePoints = roundDouble(gamePoints, 1000, 1000);
+		
+		LGPRating = (drank+rank+gamePoints+ssrank) ;
+		LGPRating = roundDouble(LGPRating, 1000, 1000);
+		
+	}
+		
+	double getRating()
+	{
+		return rating;
+	}
+	
+		
+	double getLGPRating()
+	{
+		return LGPRating;
+	}
+	
+	double roundDouble(double num, int m, int d)
+	{
+		num = Math.round(num*m);
+		num = num/d;
+		return num;
+	}
+	
+	double getFFactor()
+	{
+		return roundDouble(((double)points/(double)games)*owinpctavg, 1000, 1000);	
+	}
+}
